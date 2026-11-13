@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+.venv-mac/
+.venv-lite/

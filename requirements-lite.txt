@@ -1,0 +1,27 @@
+# Lite edition (Tkinter UI, single small .exe).
+# Install with setup_lite.bat - markitdown and pdfminer.six are installed with
+# --no-deps so their heavy optional dependencies (magika/onnxruntime/numpy,
+# requests, cryptography) are NOT pulled in; markitdown_lite/shims.py provides
+# tiny stand-ins instead.
+
+# Installed WITHOUT dependencies (see setup_lite.bat)
+#   markitdown==0.1.9
+#   pdfminer.six==20260107
+
+# markitdown core dependencies we keep
+beautifulsoup4
+markdownify
+charset-normalizer
+defusedxml
+
+# format readers
+mammoth>=1.12.2,<2     # .docx
+openpyxl               # .xlsx
+xlrd                   # .xls
+olefile                # .msg (Outlook)
+
+# UI theme (Windows 11 "Sun Valley" theme for ttk, MIT)
+sv-ttk
+
+# packaging
+pyinstaller>=6.10

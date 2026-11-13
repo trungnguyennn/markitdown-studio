@@ -1,0 +1,31 @@
+MarkItDown Studio
+Copyright 2026 Nguyen Tran Trung. All rights reserved.
+
+Third-party notices
+===================
+
+This application bundles the following open-source components, which remain
+under their own licenses:
+
+Microsoft MarkItDown
+  License: MIT
+  https://github.com/microsoft/markitdown
+
+Qt for Python (PySide6) and Qt 6
+  License: GNU Lesser General Public License v3 (LGPLv3)
+  https://www.qt.io/qt-for-python
+  The Qt libraries are shipped as separate, unmodified DLLs in this folder
+  and may be replaced with compatible versions. Source code is available at
+  https://code.qt.io/
+
+Google Magika (file type detection)
+  License: Apache 2.0
+  https://github.com/google/magika
+
+Python
+  License: Python Software Foundation License
+  https://www.python.org/
+
+Further dependencies (pdfminer.six, mammoth, python-pptx, openpyxl, pandas,
+Pillow, onnxruntime, and others) are distributed under their own permissive
+licenses; see the *.dist-info folders inside the _internal directory.
