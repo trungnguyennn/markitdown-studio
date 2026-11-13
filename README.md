@@ -145,16 +145,19 @@ Needs Python 3.10–3.13 and the Xcode command line tools (`xcode-select --insta
 bash build_mac.sh
 ```
 
-Output: `dist/mac/MarkItDown Studio.app` and `dist/mac/MarkItDownStudio-1.0.0-mac-<arch>.dmg`.
-The build is for the CPU of the Mac it runs on (`arm64` = Apple Silicon, `x86_64` = Intel).
+Output: `dist/mac/MarkItDown Studio.app` (189 MB installed) and
+`dist/mac/MarkItDownStudio-1.0.0-mac-arm64.dmg` (59 MB to share).
+
+The supported target is **Apple Silicon** (M-series Macs). Intel Macs are not a target: the Intel
+build hung in its self-test on GitHub's Intel machines and was dropped instead of investigated.
 
 A Mac app cannot be built on Windows (PyInstaller does not cross-compile). Without a Mac, push the
 project to a GitHub repository and run the **Build macOS app** workflow from the Actions tab; it
-builds both CPU types and attaches the `.dmg` files and a self-test screenshot to the run.
+attaches the `.dmg` and a self-test screenshot to the run.
 
 ### How the size is kept down (no feature removed)
 
-Measured by building the same spec on Windows, where it takes the app folder from 305 MB to 202 MB;
+Measured by building the same spec on Windows, where it takes the app folder from 305 MB to 183 MB;
 all 16 sample files convert to byte-identical Markdown before and after.
 
 | Left out | Why the app never needs it | Windows size |
@@ -164,7 +167,8 @@ all 16 sample files convert to byte-identical Markdown before and after.
 | Qt UI translations | the app is English-only | 7 MB |
 | FLAC encoders for other operating systems | only the Mac one can run on a Mac | 2–5 MB |
 | Azure client, MSAL, setuptools | markitdown only uses Azure when given an endpoint, which the app never does | 3 MB |
-| Second CPU architecture | one build per CPU type instead of a universal binary | about half of Qt and Python |
+| Second copy of the onnxruntime engine | the wheel also ships it as a stand-alone library for C/C++ programs; Python never loads it | 19 MB (31 MB on Mac) |
+| Second CPU architecture | Apple Silicon only instead of a universal binary | about half of Qt and Python |
 
 Also applied: debug symbols stripped, bytecode without docstrings (`optimize=2`), LZMA-compressed
 `.dmg`. Kept in full: PDF tables (pdfplumber), CJK CMaps, encrypted PDFs (cryptography), pandas,

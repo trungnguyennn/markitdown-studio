@@ -11,13 +11,7 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-latest      # Apple Silicon (arm64)
-          - runner: macos-15-intel    # Intel (x86_64)
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-latest   # Apple Silicon (arm64); Intel Macs are not a target
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -31,13 +25,13 @@ jobs:
       - name: Upload disk image
         uses: actions/upload-artifact@v4
         with:
-          name: MarkItDownStudio-${{ matrix.runner }}
+          name: MarkItDownStudio-mac-arm64
           path: dist/mac/*.dmg
           compression-level: 0   # the .dmg is already compressed
       - name: Upload self-test results (screenshot + converted samples)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: self-test-${{ matrix.runner }}
+          name: self-test-mac-arm64
           path: build/mac-test/out
           if-no-files-found: ignore

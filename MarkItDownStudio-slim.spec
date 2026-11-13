@@ -53,9 +53,8 @@ a = Analysis(
 # MAC_ARCH=universal2 builds a single app for both, at roughly twice the size.
 target_arch = (os.environ.get("MAC_ARCH") or platform.machine()) if IS_MAC else None
 
-# Dropping onnxruntime's second engine copy is verified on Windows and Apple Silicon.
-# On Intel Macs (which get an older onnxruntime) the self-test hung with it removed,
-# so it is kept there.
+# Dropping onnxruntime's second engine copy is verified on Windows and Apple Silicon only.
+# (Intel Macs are not a supported target: that build hung in its self-test.)
 size_trim.trim(a, drop_duplicate_onnxruntime=target_arch in (None, "arm64"))
 
 pyz = PYZ(a.pure)
