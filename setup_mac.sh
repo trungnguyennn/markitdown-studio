@@ -15,7 +15,7 @@ echo "[1/2] Creating virtual environment (.venv-mac)..."
 
 echo "[2/2] Installing dependencies..."
 .venv-mac/bin/python -m pip install --upgrade pip
-.venv-mac/bin/python -m pip install -r requirements.txt
+.venv-mac/bin/python -m pip install --prefer-binary -r requirements.txt
 
 echo
 echo "Setup complete. Run with:  ./run_mac.sh      Build the app with:  ./build_mac.sh"
