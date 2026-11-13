@@ -153,6 +153,30 @@ def trim(analysis, log=print) -> None:
             else:
                 kept.append(entry)
 
+    # Pass 1b: the onnxruntime wheel ships its engine twice: inside the Python
+    # extension (onnxruntime_pybind11_state) and again as a stand-alone library for
+    # C/C++ programs. Python never loads the second copy, so it goes - unless the
+    # extension turns out to link against it on this platform.
+    ort_lib = re.compile(r"(?:^|/)onnxruntime/capi/(?:lib)?onnxruntime(?:\.[\d.]+)?\.(?:dll|dylib|so[.\d]*)$")
+    ort_ref = re.compile(rb"libonnxruntime\.[\d.]*dylib|[^_a-zA-Z]onnxruntime\.dll|libonnxruntime\.so", re.IGNORECASE)
+    ort_ext = [e[1] for e in kept_bin + kept_data if "onnxruntime_pybind11_state" in _norm(e[0])]
+
+    def extension_links_library() -> bool:
+        for path in ort_ext:
+            try:
+                with open(path, "rb") as fh:
+                    if ort_ref.search(fh.read()):
+                        return True
+            except OSError:
+                return True  # cannot tell: keep the library
+        return not ort_ext
+
+    if not extension_links_library():
+        for kept in (kept_bin, kept_data):
+            for entry in [e for e in kept if ort_lib.search(_norm(e[0]))]:
+                drop(entry, "second copy of the onnxruntime engine (for C/C++ programs)")
+                kept.remove(entry)
+
     # Pass 2: keep only the Qt libraries still linked by something that remains.
     needed: set[str] = set()
     libs: dict[str, str] = {}  # Qt library name -> path of its main binary
@@ -172,6 +196,10 @@ def trim(analysis, log=print) -> None:
 
     def qt_ok(entry) -> bool:
         name = qt_library(entry[0])
+        if name is None and len(entry) > 2 and entry[2] == "SYMLINK":
+            # macOS: top-level links such as "QtQuick" -> "PySide6/Qt/lib/QtQuick.framework/...";
+            # without this they would be left dangling.
+            name = qt_library(entry[1])
         if name is None or name in needed:
             return True
         drop(entry, f"Qt library not linked by anything: {name}")

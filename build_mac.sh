@@ -58,6 +58,6 @@ hdiutil create -quiet -volname "$APP_NAME" -srcfolder "$STAGE" -fs HFS+ -format 
 echo
 echo "Done."
 echo "Largest items in the app (MB):"
-du -sm "$APP"/Contents/Frameworks/* "$APP"/Contents/Frameworks/PySide6/* "$APP"/Contents/Frameworks/PySide6/Qt/lib/* 2>/dev/null | sort -rn | head -40
+du -sm "$APP"/Contents/Frameworks/* "$APP"/Contents/Frameworks/PySide6/* "$APP"/Contents/Frameworks/PySide6/Qt/lib/* "$APP"/Contents/Frameworks/onnxruntime/capi/* 2>/dev/null | sort -rn | head -40
 echo "  App: $APP  ($(du -sh "$APP" | cut -f1) on disk)"
 echo "  DMG: $DMG  ($(du -h "$DMG" | cut -f1) to share)"
