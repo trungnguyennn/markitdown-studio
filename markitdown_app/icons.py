@@ -316,7 +316,8 @@ def app_icon_pixmap(size: int, margin: float = 0.0) -> QPixmap:
     radius = tile * 0.22
     p.drawRoundedRect(rect, radius, radius)
     font = QFont()
-    font.setFamilies(["Segoe UI", "Helvetica Neue", "Arial"])
+    # Listing a font that is not installed makes Qt on macOS search for a substitute (slow).
+    font.setFamilies(["Segoe UI", "Arial"] if sys.platform == "win32" else ["Helvetica Neue", "Arial"])
     font.setBold(True)
     font.setPixelSize(max(6, int(tile * 0.46)))
     p.setFont(font)

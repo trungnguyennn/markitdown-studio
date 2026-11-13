@@ -48,14 +48,17 @@ a = Analysis(
     noarchive=False,
     optimize=2,  # drop docstrings and asserts from the bundled bytecode
 )
-size_trim.trim(a)
-
-pyz = PYZ(a.pure)
-
 # One CPU architecture per build: Qt and Python ship as universal (arm64 + x86_64)
 # binaries, and naming the target makes PyInstaller keep only that half.
 # MAC_ARCH=universal2 builds a single app for both, at roughly twice the size.
 target_arch = (os.environ.get("MAC_ARCH") or platform.machine()) if IS_MAC else None
+
+# Dropping onnxruntime's second engine copy is verified on Windows and Apple Silicon.
+# On Intel Macs (which get an older onnxruntime) the self-test hung with it removed,
+# so it is kept there.
+size_trim.trim(a, drop_duplicate_onnxruntime=target_arch in (None, "arm64"))
+
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,

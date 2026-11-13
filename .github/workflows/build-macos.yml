@@ -18,6 +18,7 @@ jobs:
           - runner: macos-latest      # Apple Silicon (arm64)
           - runner: macos-15-intel    # Intel (x86_64)
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

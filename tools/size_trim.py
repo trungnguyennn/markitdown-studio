@@ -128,7 +128,7 @@ def _unwanted(dest: str) -> str | None:
     return None
 
 
-def trim(analysis, log=print) -> None:
+def trim(analysis, log=print, drop_duplicate_onnxruntime: bool = True) -> None:
     """Filter analysis.binaries / analysis.datas in place and log what was saved."""
     import os
 
@@ -171,7 +171,7 @@ def trim(analysis, log=print) -> None:
                 return True  # cannot tell: keep the library
         return not ort_ext
 
-    if not extension_links_library():
+    if drop_duplicate_onnxruntime and not extension_links_library():
         for kept in (kept_bin, kept_data):
             for entry in [e for e in kept if ort_lib.search(_norm(e[0]))]:
                 drop(entry, "second copy of the onnxruntime engine (for C/C++ programs)")

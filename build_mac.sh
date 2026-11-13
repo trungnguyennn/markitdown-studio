@@ -36,7 +36,15 @@ if [ "${SKIP_TEST:-0}" != "1" ]; then
     echo "[3/4] Self-test: converting one sample of each format with the built app..."
     rm -rf build/mac-test
     $PY tools/make_samples.py build/mac-test/samples
-    if "$APP/Contents/MacOS/MarkItDownStudio" --smoke-test "$PWD/build/mac-test/out" "$PWD"/build/mac-test/samples/*; then
+    # Run with a time limit: a hung app must fail the build, not stall it.
+    "$APP/Contents/MacOS/MarkItDownStudio" --smoke-test "$PWD/build/mac-test/out" "$PWD"/build/mac-test/samples/* &
+    TEST_PID=$!
+    ( sleep "${TEST_TIMEOUT:-600}"; echo "ERROR: self-test still running after ${TEST_TIMEOUT:-600}s, stopping it." >&2; kill -9 $TEST_PID 2>/dev/null ) &
+    WATCHDOG_PID=$!
+    TEST_STATUS=0
+    wait $TEST_PID || TEST_STATUS=$?
+    kill $WATCHDOG_PID 2>/dev/null || true
+    if [ $TEST_STATUS -eq 0 ]; then
         echo "      Self-test passed (results and a screenshot are in build/mac-test/out)."
     else
         echo "ERROR: self-test failed. See build/mac-test/out/results.json" >&2
