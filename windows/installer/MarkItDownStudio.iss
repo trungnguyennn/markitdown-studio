@@ -1,5 +1,5 @@
 ; Inno Setup 6 script for MarkItDown Studio
-; Build with make_installer.bat (or: ISCC.exe installer\MarkItDownStudio.iss)
+; Build with windows\make_installer.bat (or: ISCC.exe windows\installer\MarkItDownStudio.iss)
 
 #define AppName      "MarkItDown Studio"
 #define AppExeName   "MarkItDownStudio.exe"
@@ -8,7 +8,7 @@
 #ifndef AppVersion
   #define AppVersion "1.0.0"
 #endif
-#define SourceDir    "..\dist\MarkItDownStudio"
+#define SourceDir    "..\..\dist\MarkItDownStudio"
 
 [Setup]
 ; Never change AppId after the first release: it links upgrades/uninstall.
@@ -37,11 +37,11 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 
 WizardStyle=modern
-SetupIconFile=..\assets\app.ico
+SetupIconFile=..\..\assets\app.ico
 UninstallDisplayIcon={app}\{#AppExeName}
 UninstallDisplayName={#AppName}
 
-OutputDir=..\dist\installer
+OutputDir=..\..\dist\installer
 OutputBaseFilename=MarkItDownStudio-Setup-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes

@@ -13,7 +13,9 @@ Layout of the appended data (written by tools/lzma_onefile.py):
     [xz stream 0][xz stream 1]...[index: JSON][footer: magic, index offset, index size]
 
 Each stream holds the plain concatenation of its files; the index lists, per
-stream, where it starts and the (path, size) of every file in order. Streams are
+stream, where it starts and the (path, size) of every file in order. A file
+marked "gz" was a gzip file whose contents are stored un-gzipped (so that LZMA
+can compress them properly); it is gzipped again here as it is written. Streams are
 unpacked in parallel threads. xz verifies a CRC-64 of everything it unpacks.
 
 Set MDS_BOOT_PROBE=<file> to make the hook write the list of files Python has
@@ -22,6 +24,7 @@ PyInstaller's archive so that Python can start and run this hook.
 """
 
 import ctypes
+import gzip
 import importlib
 import json
 import lzma
@@ -64,6 +67,13 @@ def _write_probe(target: str) -> None:
         json.dump(sorted(found), fh)
 
 
+def _close(handle) -> None:
+    handle.close()
+    raw_file = getattr(handle, "raw_file", None)  # GzipFile does not close the file it wraps
+    if raw_file is not None:
+        raw_file.close()
+
+
 def _unpack_stream(exe: str, root: str, stream: dict, errors: list) -> None:
     try:
         decoder = lzma.LZMADecompressor(format=lzma.FORMAT_XZ)
@@ -74,12 +84,15 @@ def _unpack_stream(exe: str, root: str, stream: dict, errors: list) -> None:
         def next_file():
             # Opens the next file that has content; empty files are created on the way.
             nonlocal out, left
-            for name, size in files:
+            for name, size, *flags in files:
                 handle = open(os.path.join(root, name), "wb")
+                if flags:  # "gz": write through a gzip compressor
+                    handle = gzip.GzipFile(filename="", mode="wb", compresslevel=1, fileobj=handle, mtime=0)
+                    handle.raw_file = handle.fileobj
                 if size:
                     out, left = handle, size
                     return True
-                handle.close()
+                _close(handle)
             out, left = None, 0
             return False
 
@@ -101,14 +114,14 @@ def _unpack_stream(exe: str, root: str, stream: dict, errors: list) -> None:
                     left -= len(part)
                     data = data[len(part):]
                     if left == 0:
-                        out.close()
+                        _close(out)
                         more = next_file()
         if more or not decoder.eof:
             raise EOFError("the packed data ended early")
     except BaseException as exc:  # noqa: BLE001 - reported on the main thread
         errors.append(exc)
         if out is not None and not out.closed:
-            out.close()
+            _close(out)
 
 
 def _boot() -> None:

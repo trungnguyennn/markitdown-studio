@@ -1,6 +1,7 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+rem This script lives in windows\ ; everything runs from the project root.
+cd /d "%~dp0.."
 
 echo [1/3] Creating virtual environment (.venv)...
 where py >nul 2>nul
@@ -26,5 +27,5 @@ if errorlevel 1 (
 )
 
 echo.
-echo Setup complete. Start the app with run.bat
+echo Setup complete. Start the app with windows\run.bat
 endlocal

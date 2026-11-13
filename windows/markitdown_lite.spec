@@ -1,12 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec for MarkItDown Studio Lite (single small .exe).
-# Build with build_lite.bat  (or: .venv-lite\Scripts\python.exe -m PyInstaller markitdown_lite.spec)
+# Build with windows\build_lite.bat
 
 import os
 
 from PyInstaller.utils.hooks import collect_data_files
 
-ROOT = os.path.abspath(SPECPATH)
+ROOT = os.path.dirname(os.path.abspath(SPECPATH))  # project root (this file is one level below it)
 
 # Modules that must never be bundled (heavy, unused, or replaced by markitdown_lite/shims.py).
 EXCLUDES = [
@@ -71,5 +71,5 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     icon=os.path.join(ROOT, "assets", "app.ico"),
-    version=os.path.join(ROOT, "installer", "version_info.txt"),
+    version=os.path.join(ROOT, "windows", "installer", "version_info.txt"),
 )

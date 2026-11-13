@@ -1,6 +1,7 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+rem This script lives in windows\ ; everything runs from the project root.
+cd /d "%~dp0.."
 if not exist ".venv\Scripts\python.exe" (
     call "%~dp0setup.bat" || exit /b 1
 )
@@ -14,8 +15,9 @@ echo [2/2] Building dist\MarkItDownStudio with PyInstaller...
     --noconfirm --clean ^
     --windowed ^
     --name MarkItDownStudio ^
-    --icon assets\app.ico ^
-    --version-file installer\version_info.txt ^
+    --icon "%CD%\assets\app.ico" ^
+    --version-file "%CD%\windows\installer\version_info.txt" ^
+    --specpath build ^
     --collect-all markitdown ^
     --collect-all magika ^
     --collect-data pdfminer ^
@@ -31,5 +33,5 @@ if errorlevel 1 (
 
 echo.
 echo Done: dist\MarkItDownStudio\MarkItDownStudio.exe
-echo Next: run make_installer.bat to create the setup .exe
+echo Next: run windows\make_installer.bat to create the setup .exe
 endlocal

@@ -3,8 +3,8 @@
 # (-> dist/mac/MarkItDown Studio.app). It also builds on Windows
 # (-> dist\slim\MarkItDownStudio\) so the trimming rules can be tested there.
 #
-#   macOS:    ./build_mac.sh
-#   Windows:  .venv\Scripts\python.exe -m PyInstaller --noconfirm --distpath dist\slim --workpath build\slim MarkItDownStudio-slim.spec
+#   macOS:    macos/build_mac.sh
+#   Windows:  .venv\Scripts\python.exe -m PyInstaller --noconfirm --distpath dist\slim --workpath build\slim macos\MarkItDownStudio-mac.spec
 #
 # Every feature of the Full edition is kept; see tools/size_trim.py for what is left out and why.
 
@@ -14,7 +14,7 @@ import sys
 
 from PyInstaller.utils.hooks import collect_all, collect_data_files, copy_metadata
 
-ROOT = os.path.abspath(SPECPATH)
+ROOT = os.path.dirname(os.path.abspath(SPECPATH))  # project root (this file is one level below it)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, ROOT)
 
@@ -76,7 +76,7 @@ exe = EXE(
     codesign_identity=os.environ.get("CODESIGN_IDENTITY") or None,  # default: ad-hoc signature
     entitlements_file=None,
     icon=os.path.join(ROOT, "assets", "app.icns" if IS_MAC else "app.ico"),
-    version=None if IS_MAC else os.path.join(ROOT, "installer", "version_info.txt"),
+    version=None if IS_MAC else os.path.join(ROOT, "windows", "installer", "version_info.txt"),
 )
 coll = COLLECT(
     exe,

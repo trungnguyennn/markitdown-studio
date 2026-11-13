@@ -11,6 +11,7 @@ Used by MarkItDownStudio-portable.spec:
 from __future__ import annotations
 
 import fnmatch
+import gzip
 import json
 import lzma
 import os
@@ -81,7 +82,19 @@ def _compress(group: list[tuple[str, str]], is_code: bool) -> tuple[bytes, list]
     for dest, src in group:
         with open(src, "rb") as fh:
             data = fh.read()
-        files.append([dest.replace("\\", "/"), len(data)])
+        entry = [dest.replace("\\", "/"), len(data)]
+        if dest.lower().endswith(".gz"):
+            # Already-gzipped data cannot be compressed again. Store what is inside
+            # instead (LZMA packs it far better); the boot hook gzips it again while
+            # unpacking, so the program reads exactly the same content.
+            try:
+                inner = gzip.decompress(data)
+            except (OSError, EOFError):
+                inner = None
+            if inner:
+                data = inner
+                entry = [entry[0], len(data), "gz"]
+        files.append(entry)
         raw += data
     dict_size = 1 << 20
     while dict_size < min(len(raw), MAX_DICT):

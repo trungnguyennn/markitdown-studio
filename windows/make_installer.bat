@@ -1,6 +1,7 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+rem This script lives in windows\ ; everything runs from the project root.
+cd /d "%~dp0.."
 
 rem Locate the Inno Setup 6 compiler
 set "ISCC="
@@ -13,7 +14,7 @@ if not defined ISCC (
     exit /b 1
 )
 
-rem Build the app first if needed (or always, with: make_installer.bat rebuild)
+rem Build the app first if needed (or always, with: windows\make_installer.bat rebuild)
 if /i "%~1"=="rebuild" goto build
 if exist "dist\MarkItDownStudio\MarkItDownStudio.exe" goto package
 :build
@@ -22,7 +23,7 @@ call "%~dp0build.bat" || exit /b 1
 :package
 for /f "usebackq delims=" %%v in (`.venv\Scripts\python.exe -c "from markitdown_app import __version__; print(__version__)"`) do set "APPVER=%%v"
 echo Creating installer for version %APPVER%...
-"%ISCC%" /Q /DAppVersion=%APPVER% "installer\MarkItDownStudio.iss"
+"%ISCC%" /Q /DAppVersion=%APPVER% "windows\installer\MarkItDownStudio.iss"
 if errorlevel 1 (
     echo ERROR: Inno Setup compilation failed.
     exit /b 1

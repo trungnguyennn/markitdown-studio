@@ -1,4 +1,4 @@
-"""Size trimming rules for the Full edition (used by MarkItDownStudio-slim.spec).
+"""Size trimming rules for the Full edition (used by macos/MarkItDownStudio-mac.spec and windows/MarkItDownStudio-portable.spec).
 
 Rule of the house: nothing the app can do is removed and nothing is swapped for
 a lighter stand-in. Only files that the app can never load are left out:

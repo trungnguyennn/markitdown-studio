@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 # PyInstaller spec: Full edition as ONE small portable exe for Windows.
-#   -> dist\portable\MarkItDownStudio-Portable.exe        (build with build_portable.bat)
+#   -> dist\portable\MarkItDownStudio-Portable.exe        (build with windows\build_portable.bat)
 #
 # Same app and same features as the installer build. Two things keep it small:
 #   1. tools/size_trim.py leaves out files the app can never load (see its header).
@@ -14,7 +14,7 @@ import sys
 
 from PyInstaller.utils.hooks import collect_all, collect_data_files, copy_metadata
 
-ROOT = os.path.abspath(SPECPATH)
+ROOT = os.path.dirname(os.path.abspath(SPECPATH))  # project root (this file is one level below it)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, ROOT)
 
@@ -50,7 +50,7 @@ size_trim.trim(a)
 pyz = PYZ(a.pure)
 
 ICON = os.path.join(ROOT, "assets", "app.ico")
-VERSION = os.path.join(ROOT, "installer", "version_info.txt")
+VERSION = os.path.join(ROOT, "windows", "installer", "version_info.txt")
 
 # Step 1: a throw-away folder build. Running it in probe mode tells us exactly which
 # files Python needs before the boot hook has run; only those stay in PyInstaller's archive.

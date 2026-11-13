@@ -1,6 +1,7 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+rem This script lives in windows\ ; everything runs from the project root.
+cd /d "%~dp0.."
 
 echo [1/3] Creating virtual environment (.venv-lite)...
 where py >nul 2>nul
@@ -24,5 +25,5 @@ echo [3/3] Installing markitdown and pdfminer.six without heavy dependencies...
 
 echo.
 echo Lite setup complete. Run with:   .venv-lite\Scripts\python.exe main_lite.py
-echo Build the small exe with:        build_lite.bat
+echo Build the small exe with:        windows\build_lite.bat
 endlocal
