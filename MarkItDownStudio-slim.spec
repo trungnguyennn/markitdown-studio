@@ -45,7 +45,7 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=size_trim.EXCLUDES,
-    noarchive=False,
+    noarchive=bool(os.environ.get("MDS_NOARCHIVE")),  # loose .pyc files: used by the LZMA portable build
     optimize=2,  # drop docstrings and asserts from the bundled bytecode
 )
 # One CPU architecture per build: Qt and Python ship as universal (arm64 + x86_64)

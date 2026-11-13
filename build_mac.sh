@@ -39,11 +39,19 @@ if [ "${SKIP_TEST:-0}" != "1" ]; then
     # Run with a time limit: a hung app must fail the build, not stall it.
     "$APP/Contents/MacOS/MarkItDownStudio" --smoke-test "$PWD/build/mac-test/out" "$PWD"/build/mac-test/samples/* &
     TEST_PID=$!
-    ( sleep "${TEST_TIMEOUT:-600}"; echo "ERROR: self-test still running after ${TEST_TIMEOUT:-600}s, stopping it." >&2; kill -9 $TEST_PID 2>/dev/null ) &
+    (
+        sleep "${TEST_TIMEOUT:-600}"
+        echo "ERROR: self-test still running after ${TEST_TIMEOUT:-600}s, stopping it." >&2
+        mkdir -p build/mac-test/out
+        # Record what every thread of the stuck app is doing, for diagnosis.
+        sample $TEST_PID 3 -file build/mac-test/out/hang-sample.txt >/dev/null 2>&1 || true
+        kill -9 $TEST_PID 2>/dev/null
+    ) &
     WATCHDOG_PID=$!
     TEST_STATUS=0
     wait $TEST_PID || TEST_STATUS=$?
     kill $WATCHDOG_PID 2>/dev/null || true
+    cp "$HOME/Library/Logs/MarkItDownStudio/app.log" build/mac-test/out/app.log 2>/dev/null || true
     if [ $TEST_STATUS -eq 0 ]; then
         echo "      Self-test passed (results and a screenshot are in build/mac-test/out)."
     else

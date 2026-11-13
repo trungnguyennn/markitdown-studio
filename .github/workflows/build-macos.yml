@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: PYTHON=python3 bash setup_mac.sh
       - name: Build, self-test and package
-        run: bash build_mac.sh
+        run: TEST_TIMEOUT=240 bash build_mac.sh
       - name: Upload disk image
         uses: actions/upload-artifact@v4
         with:
