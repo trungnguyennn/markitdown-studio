@@ -14,6 +14,8 @@ import threading
 from PySide6.QtCore import QByteArray, QObject, Signal, QSettings, Qt, QThreadPool, QTimer, QUrl, Slot
 from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication, QKeySequence, QShowEvent
 from PySide6.QtWidgets import (
+    QApplication,
+    QProgressDialog,
     QButtonGroup,
     QFileDialog,
     QHBoxLayout,
@@ -74,6 +76,8 @@ class _UpdateSignals(QObject):
 
 
 class MainWindow(QMainWindow):
+    _update_progress = Signal(int)
+
     def __init__(self, log_file: Path) -> None:
         super().__init__()
         self._log_file = log_file
@@ -857,49 +861,110 @@ class MainWindow(QMainWindow):
 
     def check_updates(self, silent: bool) -> None:
         def work() -> None:
+            app_update = None
+            engine = None
+            error = ""
             try:
-                self._update_signals.done.emit(updates.check(), "", silent)
+                app_update = updates.check_app(__version__)
             except Exception as exc:  # noqa: BLE001
-                log.info("Update check failed: %s", exc)
-                self._update_signals.done.emit(None, str(exc), silent)
+                log.info("App update check failed: %s", exc)
+                error = str(exc)
+            try:
+                engine = updates.check()
+            except Exception as exc:  # noqa: BLE001
+                log.info("MarkItDown update check failed: %s", exc)
+                error = error or str(exc)
+            self._update_signals.done.emit((app_update, engine, bool(error)), error, silent)
 
         if not silent:
             self._toast("Checking for updates…")
         threading.Thread(target=work, daemon=True).start()
 
     @Slot(object, str, bool)
-    def _on_update_result(self, info, error: str, silent: bool) -> None:
-        if info is None:
+    def _on_update_result(self, result, error: str, silent: bool) -> None:
+        app_update, engine, failed = result
+        if app_update is None and engine is None:
             if not silent:
                 QMessageBox.information(
                     self, "Check for updates",
                     "Could not reach the update server. Check your internet connection and try again.",
                 )
             return
-        log.info("MarkItDown bundled %s, latest %s", info.installed, info.latest)
-        if not info.newer:
+        if app_update is None:
             if not silent:
-                QMessageBox.information(
-                    self, "Check for updates",
-                    f"You are up to date.\n\nBundled MarkItDown: {info.installed}\nLatest release: {info.latest}",
-                )
+                text = f"{APP_NAME} {__version__} is up to date."
+                if engine is not None:
+                    text += f"\n\nBundled MarkItDown: {engine.installed}\nLatest MarkItDown: {engine.latest}"
+                    if engine.newer:
+                        text += "\n\nA newer MarkItDown exists; a new app build with it will be offered here once published."
+                QMessageBox.information(self, "Check for updates", text)
             return
+
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Icon.Information)
         box.setWindowTitle("Update available")
-        box.setText(f"Microsoft MarkItDown {info.latest} is available (this app bundles {info.installed}).")
+        box.setText(f"{APP_NAME} {app_update.version} is available (you have {__version__}).")
+        extra = f" It includes Microsoft MarkItDown {engine.latest}." if engine is not None else ""
+        can_install = app_update.mode != "manual"
         box.setInformativeText(
-            f"A new {APP_NAME} build with the newer engine can be downloaded from the releases page. "
-            "Your files and settings are kept."
+            ("The app downloads the update, verifies it, restarts and keeps your settings."
+             if can_install else "Open the releases page to download it.") + extra
         )
-        get = box.addButton("Download new version", QMessageBox.ButtonRole.AcceptRole)
+        install = box.addButton("Update now" if can_install else "Open releases page", QMessageBox.ButtonRole.AcceptRole)
         notes = box.addButton("What's new", QMessageBox.ButtonRole.ActionRole)
         box.addButton("Later", QMessageBox.ButtonRole.RejectRole)
         box.exec()
-        if box.clickedButton() is get:
-            QDesktopServices.openUrl(QUrl(APP_RELEASES_URL))
-        elif box.clickedButton() is notes:
-            QDesktopServices.openUrl(QUrl(info.notes_url))
+        if box.clickedButton() is notes:
+            QDesktopServices.openUrl(QUrl(app_update.notes_url))
+        elif box.clickedButton() is install:
+            if can_install:
+                self._install_update(app_update)
+            else:
+                QDesktopServices.openUrl(QUrl(app_update.notes_url or APP_RELEASES_URL))
+
+    def _install_update(self, update) -> None:
+        dlg = QProgressDialog(f"Downloading {update.asset_name}…", "Cancel", 0, 100, self)
+        dlg.setWindowTitle("Updating")
+        dlg.setWindowModality(Qt.WindowModality.WindowModal)
+        dlg.setMinimumDuration(0)
+        dlg.setAutoClose(False)
+        dlg.setAutoReset(False)
+        outcome: dict = {}
+        cancelled = threading.Event()
+        dlg.canceled.connect(cancelled.set)
+
+        def work() -> None:
+            try:
+                outcome["path"] = updates.download(
+                    update,
+                    progress=lambda d, t: self._update_progress.emit(int(d * 100 / max(t, 1))),
+                    cancelled=cancelled.is_set,
+                )
+            except Exception as exc:  # noqa: BLE001
+                outcome["error"] = str(exc)
+            self._update_progress.emit(-1)
+
+        def on_progress(pct: int) -> None:
+            if pct >= 0:
+                dlg.setValue(pct)
+                return
+            self._update_progress.disconnect(on_progress)
+            dlg.close()
+            if "error" in outcome:
+                if not cancelled.is_set():
+                    QMessageBox.warning(self, "Update failed", f"The update could not be installed.\n\n{outcome['error']}")
+                return
+            try:
+                updates.start_apply(update, outcome["path"])
+            except OSError as exc:
+                QMessageBox.warning(self, "Update failed", f"Could not start the update.\n\n{exc}")
+                return
+            log.info("Update to %s started; closing.", update.version)
+            QApplication.quit()
+
+        self._update_progress.connect(on_progress)
+        threading.Thread(target=work, daemon=True).start()
+        dlg.show()
 
     # ----------------------------------------------------------- about
     @Slot()

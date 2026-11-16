@@ -4,7 +4,7 @@ APP_NAME = "MarkItDown Studio"
 APP_ID = "MarkItDownStudio.Desktop.1"
 ORG_NAME = "MarkItDownStudio"
 BUNDLE_ID = "com.markitdownstudio.app"  # macOS bundle identifier
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # Shown in the About dialog of both editions, and in the .exe / installer metadata.
 COPYRIGHT = "Copyright 2026 Nguyen Tran Trung. All rights reserved."
