@@ -12,3 +12,6 @@ CREDITS = (
     "Built with Microsoft MarkItDown (MIT License) and other open-source "
     "components, which remain under their own licenses."
 )
+
+UPSTREAM_REPO_URL = "https://github.com/microsoft/markitdown"
+APP_RELEASES_URL = "https://github.com/trungnguyennn/markitdown-studio/releases/latest"

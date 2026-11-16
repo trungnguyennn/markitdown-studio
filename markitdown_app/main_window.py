@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from PySide6.QtCore import QByteArray, QSettings, Qt, QThreadPool, QTimer, QUrl, Slot
+import threading
+from PySide6.QtCore import QByteArray, QObject, Signal, QSettings, Qt, QThreadPool, QTimer, QUrl, Slot
 from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication, QKeySequence, QShowEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -33,7 +34,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import APP_NAME, COPYRIGHT, CREDITS, __version__, theme
+from . import APP_NAME, APP_RELEASES_URL, COPYRIGHT, CREDITS, __version__, theme, updates
 from .converter import ConversionResult, ConversionTask, WarmUpTask, file_dialog_filter
 from .icons import Glyph, app_icon, glyph_icon
 from .qt_log import QtLogHandler
@@ -68,6 +69,10 @@ class Job:
 PAGE_MESSAGE, PAGE_RAW, PAGE_PREVIEW = range(3)
 
 
+class _UpdateSignals(QObject):
+    done = Signal(object, str, bool)  # UpdateInfo | None, error, silent
+
+
 class MainWindow(QMainWindow):
     def __init__(self, log_file: Path) -> None:
         super().__init__()
@@ -80,6 +85,8 @@ class MainWindow(QMainWindow):
         self._current_key: str | None = None
         self._loading_editor = False
         self._title_bar_styled = False
+        self._update_signals = _UpdateSignals(self)
+        self._update_signals.done.connect(self._on_update_result)
 
         # One worker: MarkItDown is serialised anyway and this keeps queue order.
         self._pool = QThreadPool(self)
@@ -98,6 +105,8 @@ class MainWindow(QMainWindow):
         self._update_controls()
 
         self._pool.start(WarmUpTask())  # load the engine in the background
+        if self.auto_update.isChecked() and "--smoke-test" not in sys.argv:
+            QTimer.singleShot(3000, lambda: self.check_updates(silent=True))
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self) -> None:
@@ -128,6 +137,17 @@ class MainWindow(QMainWindow):
         about_key = theme.shortcut_text(QKeySequence.StandardKey.HelpContents)  # F1 on Windows
         about_button = self._button("About", Glyph.INFO, f"About MarkItDown Studio ({about_key})", subtle=True)
         about_button.clicked.connect(self.show_about)
+        self.auto_update = self._button(
+            "Auto-check updates", Glyph.SYNC,
+            "When on, the app checks at start-up whether Microsoft MarkItDown has a new release", subtle=True,
+        )
+        self.auto_update.setCheckable(True)
+        self.auto_update.setChecked(self._settings.value("auto_update", True, type=bool))
+        self.auto_update.toggled.connect(self._toggle_auto_update)
+        update_button = self._button("Check for updates", Glyph.SYNC, "Check now for a newer MarkItDown release", subtle=True)
+        update_button.clicked.connect(lambda: self.check_updates(silent=False))
+        header.addWidget(self.auto_update, 0, Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(update_button, 0, Qt.AlignmentFlag.AlignVCenter)
         header.addWidget(about_button, 0, Qt.AlignmentFlag.AlignVCenter)
         outer.addLayout(header)
 
@@ -829,6 +849,57 @@ class MainWindow(QMainWindow):
         if not quiet:
             QMessageBox.critical(self, "Export failed", message)
         return False
+
+    # ----------------------------------------------------------- updates
+    def _toggle_auto_update(self, on: bool) -> None:
+        self._settings.setValue("auto_update", on)
+        self._toast("Automatic update check is " + ("on" if on else "off"))
+
+    def check_updates(self, silent: bool) -> None:
+        def work() -> None:
+            try:
+                self._update_signals.done.emit(updates.check(), "", silent)
+            except Exception as exc:  # noqa: BLE001
+                log.info("Update check failed: %s", exc)
+                self._update_signals.done.emit(None, str(exc), silent)
+
+        if not silent:
+            self._toast("Checking for updates…")
+        threading.Thread(target=work, daemon=True).start()
+
+    @Slot(object, str, bool)
+    def _on_update_result(self, info, error: str, silent: bool) -> None:
+        if info is None:
+            if not silent:
+                QMessageBox.information(
+                    self, "Check for updates",
+                    "Could not reach the update server. Check your internet connection and try again.",
+                )
+            return
+        log.info("MarkItDown bundled %s, latest %s", info.installed, info.latest)
+        if not info.newer:
+            if not silent:
+                QMessageBox.information(
+                    self, "Check for updates",
+                    f"You are up to date.\n\nBundled MarkItDown: {info.installed}\nLatest release: {info.latest}",
+                )
+            return
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Information)
+        box.setWindowTitle("Update available")
+        box.setText(f"Microsoft MarkItDown {info.latest} is available (this app bundles {info.installed}).")
+        box.setInformativeText(
+            f"A new {APP_NAME} build with the newer engine can be downloaded from the releases page. "
+            "Your files and settings are kept."
+        )
+        get = box.addButton("Download new version", QMessageBox.ButtonRole.AcceptRole)
+        notes = box.addButton("What's new", QMessageBox.ButtonRole.ActionRole)
+        box.addButton("Later", QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        if box.clickedButton() is get:
+            QDesktopServices.openUrl(QUrl(APP_RELEASES_URL))
+        elif box.clickedButton() is notes:
+            QDesktopServices.openUrl(QUrl(info.notes_url))
 
     # ----------------------------------------------------------- about
     @Slot()

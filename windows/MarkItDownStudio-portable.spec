@@ -32,6 +32,11 @@ for package in ("markitdown", "magika"):
     binaries += b
     hiddenimports += h
 
+# Offline OCR (Windows.Media.Ocr through the winrt projections)
+from PyInstaller.utils.hooks import collect_submodules
+hiddenimports += collect_submodules("winrt")
+hiddenimports += ["markitdown_app.ocr", "markitdown_app.updates"]
+
 a = Analysis(
     [os.path.join(ROOT, "main.py")],
     pathex=[ROOT],

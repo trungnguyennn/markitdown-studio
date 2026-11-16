@@ -35,6 +35,9 @@ for package in ("markitdown", "magika"):
     binaries += b
     hiddenimports += h
 
+# Offline OCR (Vision framework through pyobjc)
+hiddenimports += ["Vision", "Foundation", "objc", "markitdown_app.ocr", "markitdown_app.updates"]
+
 a = Analysis(
     [os.path.join(ROOT, "main.py")],
     pathex=[ROOT],

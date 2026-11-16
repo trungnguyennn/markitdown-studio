@@ -37,7 +37,17 @@ editions' About dialogs use. The same text is also in `windows/installer/version
 .exe's Properties → Details) and `windows/installer/MarkItDownStudio.iss` (installer and Apps & features).
 
 Supported inputs (via `markitdown[all]`): PDF, DOCX, PPTX, XLSX/XLS, EPUB, Outlook MSG,
-HTML, CSV, JSON, XML, IPYNB, TXT, images (EXIF metadata), audio (metadata/transcription), ZIP.
+HTML, CSV, JSON, XML, IPYNB, TXT, images (**offline OCR** of the text in them), audio (metadata/transcription), ZIP.
+
+### OCR and update check (Full edition)
+
+- **OCR** uses the operating system's own engine, so it is offline and adds almost no size:
+  Windows.Media.Ocr on Windows (recognises the languages installed in Windows: Settings → Time &
+  language → Language & region) and the Vision framework on macOS. Images with no text give a short note.
+- **Auto-check updates** (toggle in the header, on by default) and **Check for updates** ask PyPI/GitHub
+  whether Microsoft MarkItDown has a newer release than the bundled one. Only an anonymous read-only request
+  is sent. A frozen app cannot swap its own engine, so you are offered the newest MarkItDown Studio build from the
+  Releases page; each build bundles the latest MarkItDown available when it was built.
 
 ## Project structure
 
@@ -90,7 +100,7 @@ The Lite edition opens in about 1 second, compared with about 4 seconds for the 
 ### What Lite does not do (use the Full edition for these)
 
 - Rendered Markdown **Preview** (Lite shows the editable Markdown source only)
-- Audio transcription and image metadata
+- Audio transcription and image OCR
 - Converting URLs (Lite is offline-only: it never opens a network connection)
 - PDF table detection (pdfplumber). Lite extracts PDF text in reading order.
 - AES-encrypted PDFs

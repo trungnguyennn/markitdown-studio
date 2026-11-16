@@ -58,7 +58,14 @@ class ConversionError(Exception):
 def _default_factory():
     from markitdown import MarkItDown
 
-    return MarkItDown(enable_plugins=False)
+    md = MarkItDown(enable_plugins=False)
+    try:
+        from . import ocr
+
+        ocr.register(md)  # offline OCR for images (Windows / macOS built-in engine)
+    except Exception as exc:  # noqa: BLE001 - OCR is optional, never block start-up
+        log.warning("OCR not available: %s", exc)
+    return md
 
 
 # MarkItDown is expensive to construct, so a single instance is shared. The

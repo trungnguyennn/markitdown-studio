@@ -184,6 +184,21 @@ def main(out: Path) -> None:
     image.save(out / "sample.png")
     image.save(out / "sample.jpg", quality=85)
 
+    from PIL import ImageDraw, ImageFont
+
+    try:
+        font = ImageFont.truetype("arial.ttf", 44)
+    except OSError:
+        try:
+            font = ImageFont.truetype("DejaVuSans.ttf", 44)
+        except OSError:
+            font = ImageFont.load_default(44)
+    text_img = Image.new("RGB", (700, 200), "white")
+    draw = ImageDraw.Draw(text_img)
+    draw.text((20, 30), "Hello MarkItDown OCR", fill="black", font=font)
+    draw.text((20, 110), "Invoice 2026-001 Total $42", fill="black", font=font)
+    text_img.save(out / "sample_ocr.png")
+
     with zipfile.ZipFile(out / "sample.zip", "w", zipfile.ZIP_DEFLATED) as z:
         z.write(out / "sample.csv", "inner/sample.csv")
         z.write(out / "sample.docx", "inner/sample.docx")
